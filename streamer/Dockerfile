@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     pulseaudio-utils \
     dbus-x11 \
     wmctrl \
+    tzdata \
   && rm -rf /var/lib/apt/lists/*
 
 ENV CHROMIUM_PATH=/usr/bin/chromium
@@ -30,6 +31,7 @@ COPY package.json package-lock.json /app/
 RUN npm ci --omit=dev
 
 COPY retro_set_location.js /app/retro_set_location.js
+COPY zip_to_tz.js /app/zip_to_tz.js
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh \
   && chown -R streamer:streamer /app /home/streamer

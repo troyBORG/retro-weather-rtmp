@@ -18,6 +18,8 @@ services:
       - FPS=30
       # ZIP comes from `.env` (gitignored). Default below if no .env.
       - LOCATION=${LOCATION:-60601}
+      # Optional override; if empty, streamer derives IANA TZ from US ZIP (LOCATION).
+      - TZ=${TZ:-}
       - RTSP_URL=rtsp://rtsp:8554/retro
       - TARGET_URL=https://weather.com/retro/
     depends_on:

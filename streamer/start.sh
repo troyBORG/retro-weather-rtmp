@@ -11,6 +11,17 @@ set -euo pipefail
 : "${TARGET_URL:=https://weather.com/retro/}"
 : "${PULSE_SINK_NAME:=retro_sink}"
 
+# TZ: use explicit TZ from the environment if set; otherwise derive IANA zone from US ZIP (LOCATION).
+if [[ -z "${TZ:-}" ]]; then
+  if computed=$(node /app/zip_to_tz.js 2>/dev/null); then
+    TZ="$computed"
+  else
+    TZ="UTC"
+  fi
+fi
+export TZ
+echo "Timezone: ${TZ} (LOCATION=${LOCATION})"
+
 echo "Starting Xvfb on ${DISPLAY} at ${WIDTH}x${HEIGHT}x${DEPTH}"
 Xvfb "${DISPLAY}" -screen 0 "${WIDTH}x${HEIGHT}x${DEPTH}" &
 

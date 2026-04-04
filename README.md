@@ -15,6 +15,7 @@ docker compose up -d --build
 ```
 
 - **`LOCATION`** lives only in **`.env`**, which is gitignored, so your ZIP is not pushed to Git.
+- **Timezone:** if you do **not** set **`TZ`** in `.env`, the streamer looks up your **US ZIP** (via [Zippopotam](http://www.zippopotam.us/)), maps lat/long with **`geo-tz`**, and sets the container’s **`TZ`** so the clock matches that area. Set **`TZ`** yourself (IANA name, e.g. `America/Chicago`) if you want to override or if lookup fails (then it falls back to **UTC**).
 - **Resolution** (`WIDTH`, `HEIGHT`, `DEPTH`, `FPS`) is set in **`docker-compose.yml`** (committed). Those values control the virtual display size, FFmpeg capture size, and the Chromium window—the streamer uses kiosk/fullscreen flags, Fluxbox rules for `Chromium`, and `wmctrl` so the browser window should match that size edge-to-edge.
 
 Optional: Compose may mention baking builds (`COMPOSE_BAKE=true`). You can ignore that or enable it if you want.
