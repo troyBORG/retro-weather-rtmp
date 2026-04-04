@@ -59,7 +59,7 @@ ffplay -rtsp_transport tcp rtsp://192.0.2.10:8554/retro
 
 If nothing connects, confirm the stack is up (`docker compose ps`) and that MediaMTX logs show publishing to path `retro` (see MediaMTX container logs).
 
-**Video and audio:** The streamer muxes **H.264** from the virtual display and **AAC** from a PulseAudio null sink (what Chromium plays). Automation tries to click **START RETROCAST** if it is still visible, then looks for an **unmute** control—if the page auto-starts, the start step is skipped. If PulseAudio fails to start inside the container, the entrypoint falls back to **video only** (check streamer logs for `PulseAudio failed`).
+**Video and audio:** The streamer muxes **H.264** from the virtual display and **AAC** from a PulseAudio null sink (what Chromium plays). Automation tries to click **START RETROCAST** if it is still visible, then **unmute** with an initial wait, hover/nudge to reveal controls, and retries—it is normal for sound to kick in **10–30 seconds** after playback starts while the control bar appears. Tune **`UNMUTE_*`** in `.env` if you need it faster or slower. Chromium is started without **`--enable-automation`** so the “controlled by automated test software” banner should not appear at the top of the window. If PulseAudio fails to start inside the container, the entrypoint falls back to **video only** (check streamer logs for `PulseAudio failed`).
 
 ## Compliance
 
