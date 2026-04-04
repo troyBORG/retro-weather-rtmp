@@ -83,14 +83,7 @@ function forceFillDisplay(width, height) {
 }
 
 async function forceFullscreen(page, width, height) {
-  try {
-    await page.evaluate(async () => {
-      try {
-        const el = document.fullscreenElement || document.documentElement;
-        await el.requestFullscreen();
-      } catch (_) {}
-    });
-  } catch (_) {}
+  // Do not call requestFullscreen() here — some SPAs treat it like a resize and reset the player.
   forceFillDisplay(width, height);
 }
 
@@ -123,15 +116,13 @@ async function tryUnmute(page, width, height) {
   const stepMs = parseInt(process.env.UNMUTE_RETRY_INTERVAL_MS || '7000', 10);
   const maxPasses = parseInt(process.env.UNMUTE_MAX_PASSES || '18', 10);
 
+  // Only unmute-specific targets — broad "mute" / generic SVG buttons can hit close/restart and reset the session.
   const attempts = [
     () => page.getByRole('button', { name: /^unmute$/i }),
     () => page.getByRole('button', { name: /unmute/i }),
     () => page.locator('[aria-label*="unmute" i]'),
-    () => page.locator('button[aria-label*="mute" i]').first(),
+    () => page.locator('button[aria-label*="unmute" i]'),
     () => page.locator('[title*="unmute" i]'),
-    () => page.locator('[title*="mute" i]').first(),
-    () => page.locator('[class*="mute" i] button').first(),
-    () => page.locator('button').filter({ has: page.locator('svg') }).first(),
   ];
 
   await page.waitForTimeout(initialMs);
@@ -158,7 +149,6 @@ async function tryUnmute(page, width, height) {
 
 (async () => {
   const targetUrl = process.env.TARGET_URL || 'https://weather.com/retro/';
-  const zip = process.env.LOCATION || '60601';
   const width = parseInt(process.env.WIDTH || '1920', 10);
   const height = parseInt(process.env.HEIGHT || '1080', 10);
 
@@ -216,23 +206,8 @@ async function tryUnmute(page, width, height) {
   forceFillDisplay(width, height);
   await forceFullscreen(page, width, height);
 
-  const candidates = [
-    page.getByPlaceholder(/search/i),
-    page.getByRole('textbox', { name: /search/i }),
-    page.locator('input[type="search"]'),
-    page.locator('input').first(),
-  ];
-
-  for (const input of candidates) {
-    try {
-      if (await input.count()) {
-        await input.first().click({ timeout: 1500 });
-        await input.first().fill(zip, { timeout: 1500 });
-        await page.keyboard.press('Enter');
-        break;
-      }
-    } catch (_) {}
-  }
+  // Do not type ZIP / press Enter in the page — that can navigate or restart RetroCast. LOCATION is still
+  // used for timezone (start.sh) and you can set location in the UI by hand if needed.
 
   await page.waitForTimeout(3600 * 1000);
 })();

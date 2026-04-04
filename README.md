@@ -14,7 +14,7 @@ nano .env   # set LOCATION to your ZIP (or edit with any editor)
 docker compose up -d --build
 ```
 
-- **`LOCATION`** lives only in **`.env`**, which is gitignored, so your ZIP is not pushed to Git.
+- **`LOCATION`** lives only in **`.env`** (gitignored). It is used for **timezone** (`zip_to_tz.js`) and is **not** typed into the webpage—typing ZIP / pressing Enter in the site was removed because it could **navigate or restart** RetroCast (countdown again).
 - **Timezone:** if you do **not** set **`TZ`** in `.env`, the streamer looks up your **US ZIP** (via [Zippopotam](http://www.zippopotam.us/)), maps lat/long with **`geo-tz`**, and sets the container’s **`TZ`** so the clock matches that area. Set **`TZ`** yourself (IANA name, e.g. `America/Chicago`) if you want to override or if lookup fails (then it falls back to **UTC**).
 - **Resolution** (`WIDTH`, `HEIGHT`, `DEPTH`, `FPS`) is set in **`docker-compose.yml`** (committed). Those values control the virtual display size, FFmpeg capture size, and the Chromium window. The automation uses a **persistent Chromium profile** (so kiosk/size apply to a real X11 window), plus Fluxbox rules, **`wmctrl -e`** (exact x/y/width/height), **`xdotool`**, and periodic retries so the window should fill the virtual screen.
 
