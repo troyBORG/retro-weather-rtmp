@@ -21,7 +21,10 @@ services:
       # Optional override; if empty, streamer derives IANA TZ from US ZIP (LOCATION).
       - TZ=${TZ:-}
       - RTSP_URL=rtsp://rtsp:8554/retro
-      - TARGET_URL=https://weather.com/retro/
+      # Override in `.env` (e.g. WeatherStar). Default: Weather.com RetroCast.
+      - TARGET_URL=${TARGET_URL:-https://weather.com/retro/}
+      - SKIP_START_RETROCAST_BUTTON=${SKIP_START_RETROCAST_BUTTON:-false}
+      - SKIP_UNMUTE=${SKIP_UNMUTE:-false}
     depends_on:
       - rtsp
     ipc: host

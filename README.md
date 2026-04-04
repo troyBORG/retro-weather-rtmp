@@ -20,6 +20,16 @@ docker compose up -d --build
 
 Optional: Compose may mention baking builds (`COMPOSE_BAKE=true`). You can ignore that or enable it if you want.
 
+### Alternative page: [WeatherStar 4000+](https://weatherstar.netbymatt.com/)
+
+Use the site’s UI to pick panels, location, and options, then use **Sharing → Copy Permalink** (or copy the URL from the address bar). In **`.env`** set:
+
+- **`TARGET_URL=`** — paste the full URL. If the shell or editor mangles `&`, wrap the whole value in **double quotes**.
+- **`SKIP_START_RETROCAST_BUTTON=true`** — skips the Weather.com–only “START RETROCAST” step.
+- **`SKIP_UNMUTE=true`** — optional, if music already plays and you do not want unmute retries.
+
+Rebuild or restart after changing **`TARGET_URL`** / flags: `docker compose up -d` (rebuild only if the streamer image changed).
+
 ## Updating an existing clone
 
 After you already have the repo folder and remote configured:

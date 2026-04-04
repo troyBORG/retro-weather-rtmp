@@ -97,6 +97,11 @@ async function clickStartRetrocast(page) {
   }
 }
 
+function envFlag(name) {
+  const v = process.env[name];
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 /** Wake video overlays (many players only show mute after hover). */
 async function nudgePlayerUi(page, width, height) {
   try {
@@ -198,9 +203,13 @@ async function tryUnmute(page, width, height) {
   forceFillDisplay(width, height);
   await forceFullscreen(page, width, height);
 
-  await clickStartRetrocast(page);
+  if (!envFlag('SKIP_START_RETROCAST_BUTTON')) {
+    await clickStartRetrocast(page);
+  }
 
-  await tryUnmute(page, width, height);
+  if (!envFlag('SKIP_UNMUTE')) {
+    await tryUnmute(page, width, height);
+  }
 
   await page.waitForTimeout(2000);
   forceFillDisplay(width, height);
