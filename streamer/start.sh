@@ -53,6 +53,11 @@ tab=$'\t'
   echo "  [Dimensions]${tab}{${WIDTH} ${HEIGHT}}"
   echo "  [Position]${tab}(UPPERLEFT)${tab}{0 0}"
   echo "  [Deco]${tab}{NONE}"
+  echo "  [Fullscreen]${tab}{yes}"
+  echo '[app] (.*RetroCast.*)'
+  echo "  [Dimensions]${tab}{${WIDTH} ${HEIGHT}}"
+  echo "  [Position]${tab}(UPPERLEFT)${tab}{0 0}"
+  echo "  [Deco]${tab}{NONE}"
 } > "${HOME}/.fluxbox/apps"
 
 echo "Starting Fluxbox window manager"

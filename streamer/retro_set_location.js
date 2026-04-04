@@ -4,9 +4,63 @@ const { chromium } = require('playwright-core');
 const CHROMIUM =
   process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 
+const USER_DATA =
+  process.env.CHROMIUM_USER_DATA ||
+  `${process.env.HOME || '/home/streamer'}/.pw-chromium-profile`;
+
+function xEnv() {
+  return { ...process.env, DISPLAY: process.env.DISPLAY || ':99' };
+}
+
+/** Exact placement: gravity,x,y,w,h — fills the Xvfb screen without relying on fullscreen bit alone. */
+function wmExactGeometry(width, height) {
+  const env = xEnv();
+  const cmds = [
+    `wmctrl -r "Chromium" -e 0,0,0,${width},${height}`,
+    `wmctrl -xr chromium.Chromium -e 0,0,0,${width},${height}`,
+    `wmctrl -xr Chromium.Chromium -e 0,0,0,${width},${height}`,
+    `wmctrl -a "RetroCast" -e 0,0,0,${width},${height}`,
+  ];
+  for (const c of cmds) {
+    try {
+      execSync(c, { stdio: 'ignore', env, timeout: 4000 });
+      return;
+    } catch (_) {}
+  }
+}
+
+function xdotoolFill(width, height) {
+  const env = xEnv();
+  const classes = ['chromium', 'Chromium', 'chromium-browser'];
+  for (const cls of classes) {
+    try {
+      const out = execSync(`xdotool search --onlyvisible --class ${cls}`, {
+        encoding: 'utf8',
+        env,
+        timeout: 5000,
+      });
+      const ids = out
+        .trim()
+        .split(/\n/)
+        .flatMap((line) => line.trim().split(/\s+/))
+        .filter(Boolean);
+      for (const id of ids) {
+        try {
+          execSync(`xdotool windowactivate ${id}`, { stdio: 'ignore', env });
+          execSync(`xdotool windowsize ${id} ${width} ${height}`, {
+            stdio: 'ignore',
+            env,
+          });
+          execSync(`xdotool windowmove ${id} 0 0`, { stdio: 'ignore', env });
+        } catch (_) {}
+      }
+      if (ids.length) return;
+    } catch (_) {}
+  }
+}
+
 function wmFullscreen() {
-  const display = process.env.DISPLAY || ':99';
-  const env = { ...process.env, DISPLAY: display };
+  const env = xEnv();
   const cmds = [
     'wmctrl -xr chromium.Chromium -b add,fullscreen',
     'wmctrl -xr Chromium.Chromium -b add,fullscreen',
@@ -22,7 +76,13 @@ function wmFullscreen() {
   }
 }
 
-async function forceFullscreen(page) {
+function forceFillDisplay(width, height) {
+  wmExactGeometry(width, height);
+  xdotoolFill(width, height);
+  wmFullscreen();
+}
+
+async function forceFullscreen(page, width, height) {
   try {
     await page.evaluate(async () => {
       try {
@@ -31,7 +91,7 @@ async function forceFullscreen(page) {
       } catch (_) {}
     });
   } catch (_) {}
-  wmFullscreen();
+  forceFillDisplay(width, height);
 }
 
 async function clickStartRetrocast(page) {
@@ -77,13 +137,16 @@ async function tryUnmute(page) {
   const width = parseInt(process.env.WIDTH || '1920', 10);
   const height = parseInt(process.env.HEIGHT || '1080', 10);
 
-  const browser = await chromium.launch({
+  // Persistent profile opens a real X11 window at launch. Plain launch() uses
+  // --no-startup-window so kiosk/size often do not apply to the Playwright-driven window.
+  const context = await chromium.launchPersistentContext(USER_DATA, {
     headless: false,
     executablePath: CHROMIUM,
     env: {
       ...process.env,
       PULSE_SINK: process.env.PULSE_SINK || 'retro_sink',
     },
+    viewport: null,
     args: [
       `--window-size=${width},${height}`,
       '--window-position=0,0',
@@ -94,30 +157,36 @@ async function tryUnmute(page) {
       '--no-sandbox',
       '--disable-dev-shm-usage',
       '--autoplay-policy=no-user-gesture-required',
+      '--ozone-platform=x11',
     ],
   });
 
-  const context = await browser.newContext({
-    viewport: null,
-  });
+  let page = context.pages()[0];
+  if (!page) page = await context.newPage();
 
-  const page = await context.newPage();
+  const keepSizing = setInterval(() => {
+    forceFillDisplay(width, height);
+  }, 8000);
+  setTimeout(() => clearInterval(keepSizing), 6 * 60 * 1000);
+
   await page.goto(targetUrl, {
     waitUntil: 'load',
     timeout: 180000,
   });
 
   await page.waitForTimeout(1500);
-  await forceFullscreen(page);
+  forceFillDisplay(width, height);
   await page.waitForTimeout(2000);
-  await forceFullscreen(page);
+  forceFillDisplay(width, height);
+  await forceFullscreen(page, width, height);
 
   await clickStartRetrocast(page);
 
   await tryUnmute(page);
 
   await page.waitForTimeout(2000);
-  await forceFullscreen(page);
+  forceFillDisplay(width, height);
+  await forceFullscreen(page, width, height);
 
   const candidates = [
     page.getByPlaceholder(/search/i),

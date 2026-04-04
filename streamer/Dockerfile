@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     pulseaudio-utils \
     dbus-x11 \
     wmctrl \
+    xdotool \
     tzdata \
   && rm -rf /var/lib/apt/lists/*
 
