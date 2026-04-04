@@ -1,7 +1,38 @@
+const { execSync } = require('child_process');
 const { chromium } = require('playwright-core');
 
 const CHROMIUM =
   process.env.CHROMIUM_PATH || '/usr/bin/chromium';
+
+function wmFullscreen() {
+  const display = process.env.DISPLAY || ':99';
+  const env = { ...process.env, DISPLAY: display };
+  const cmds = [
+    'wmctrl -xr chromium.Chromium -b add,fullscreen',
+    'wmctrl -xr Chromium.Chromium -b add,fullscreen',
+    'wmctrl -xr Chromium -b add,fullscreen',
+    'wmctrl -a "Chromium" -b add,fullscreen',
+    'wmctrl -a "RetroCast" -b add,fullscreen',
+  ];
+  for (const c of cmds) {
+    try {
+      execSync(c, { stdio: 'ignore', env, timeout: 4000 });
+      return;
+    } catch (_) {}
+  }
+}
+
+async function forceFullscreen(page) {
+  try {
+    await page.evaluate(async () => {
+      try {
+        const el = document.fullscreenElement || document.documentElement;
+        await el.requestFullscreen();
+      } catch (_) {}
+    });
+  } catch (_) {}
+  wmFullscreen();
+}
 
 async function clickStartRetrocast(page) {
   const start = page.getByRole('button', { name: /start retrocast/i });
@@ -55,6 +86,8 @@ async function tryUnmute(page) {
     },
     args: [
       `--window-size=${width},${height}`,
+      '--window-position=0,0',
+      '--start-fullscreen',
       '--no-first-run',
       '--disable-features=TranslateUI',
       '--kiosk',
@@ -65,7 +98,7 @@ async function tryUnmute(page) {
   });
 
   const context = await browser.newContext({
-    viewport: { width, height },
+    viewport: null,
   });
 
   const page = await context.newPage();
@@ -74,9 +107,17 @@ async function tryUnmute(page) {
     timeout: 180000,
   });
 
+  await page.waitForTimeout(1500);
+  await forceFullscreen(page);
+  await page.waitForTimeout(2000);
+  await forceFullscreen(page);
+
   await clickStartRetrocast(page);
 
   await tryUnmute(page);
+
+  await page.waitForTimeout(2000);
+  await forceFullscreen(page);
 
   const candidates = [
     page.getByPlaceholder(/search/i),

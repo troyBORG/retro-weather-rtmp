@@ -15,7 +15,7 @@ docker compose up -d --build
 ```
 
 - **`LOCATION`** lives only in **`.env`**, which is gitignored, so your ZIP is not pushed to Git.
-- **Resolution** (`WIDTH`, `HEIGHT`, `DEPTH`, `FPS`) is set in **`docker-compose.yml`** (committed). Those values control the virtual display size, FFmpeg capture size, and the Chromium window/viewport—keep them consistent with each other.
+- **Resolution** (`WIDTH`, `HEIGHT`, `DEPTH`, `FPS`) is set in **`docker-compose.yml`** (committed). Those values control the virtual display size, FFmpeg capture size, and the Chromium window—the streamer uses kiosk/fullscreen flags, Fluxbox rules for `Chromium`, and `wmctrl` so the browser window should match that size edge-to-edge.
 
 Optional: Compose may mention baking builds (`COMPOSE_BAKE=true`). You can ignore that or enable it if you want.
 

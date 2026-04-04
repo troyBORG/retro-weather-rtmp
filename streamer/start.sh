@@ -34,6 +34,16 @@ else
   echo "Audio capture from ${PULSE_SINK_NAME}.monitor"
 fi
 
+echo "Configuring Fluxbox so Chromium can fill ${WIDTH}x${HEIGHT}"
+mkdir -p "${HOME}/.fluxbox"
+tab=$'\t'
+{
+  echo '[app] (Chromium)'
+  echo "  [Dimensions]${tab}{${WIDTH} ${HEIGHT}}"
+  echo "  [Position]${tab}(UPPERLEFT)${tab}{0 0}"
+  echo "  [Deco]${tab}{NONE}"
+} > "${HOME}/.fluxbox/apps"
+
 echo "Starting Fluxbox window manager"
 fluxbox &
 
