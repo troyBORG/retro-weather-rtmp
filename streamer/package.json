@@ -1,0 +1,8 @@
+{
+  "name": "retro-weather-streamer",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

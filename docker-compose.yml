@@ -1,0 +1,25 @@
+services:
+  rtsp:
+    image: bluenviron/mediamtx:1
+    environment:
+      - MTX_RTSPTRANSPORTS=tcp
+    ports:
+      - "8554:8554"
+    restart: unless-stopped
+
+  streamer:
+    build: ./streamer
+    environment:
+      - DISPLAY=:99
+      - WIDTH=1920
+      - HEIGHT=1080
+      - DEPTH=24
+      - FPS=30
+      - LOCATION=60601
+      - RTSP_URL=rtsp://rtsp:8554/retro
+      - TARGET_URL=https://weather.com/retro/
+    depends_on:
+      - rtsp
+    ipc: host
+    init: true
+    restart: unless-stopped
