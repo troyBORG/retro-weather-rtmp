@@ -57,7 +57,7 @@ rtsp://<docker-host-ip>:8554/retro
 ffplay -rtsp_transport tcp rtsp://127.0.0.1:8554/retro
 ```
 
-**From another PC, phone, or TV on your LAN**, use the host’s LAN IP (example: **`192.0.2.10`**):
+**From another PC, phone, or TV on your LAN**, use the Docker host’s IP (example documentation IP **`192.0.2.10`**—replace with your real server address):
 
 ```bash
 ffplay -rtsp_transport tcp rtsp://192.0.2.10:8554/retro
