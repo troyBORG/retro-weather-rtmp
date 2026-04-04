@@ -3,6 +3,43 @@ const { chromium } = require('playwright-core');
 const CHROMIUM =
   process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 
+async function clickStartRetrocast(page) {
+  const start = page.getByRole('button', { name: /start retrocast/i });
+  try {
+    await start.waitFor({ state: 'visible', timeout: 90000 });
+    await start.click();
+  } catch {
+    // Countdown may finish and the UI auto-starts, or the CTA is gone already.
+  }
+}
+
+/** Try to unmute in-page audio so PulseAudio captures it. */
+async function tryUnmute(page) {
+  await page.waitForTimeout(6000);
+
+  const attempts = [
+    () => page.getByRole('button', { name: /^unmute$/i }),
+    () => page.getByRole('button', { name: /unmute/i }),
+    () => page.locator('[aria-label*="unmute" i]'),
+    () => page.locator('button[aria-label*="mute" i]').first(),
+    () => page.locator('[title*="unmute" i]'),
+    () => page.locator('[title*="mute" i]').first(),
+  ];
+
+  for (const getLoc of attempts) {
+    try {
+      const loc = getLoc();
+      if (await loc.count()) {
+        const el = loc.first();
+        if (await el.isVisible({ timeout: 2500 }).catch(() => false)) {
+          await el.click({ timeout: 5000 });
+          return;
+        }
+      }
+    } catch (_) {}
+  }
+}
+
 (async () => {
   const targetUrl = process.env.TARGET_URL || 'https://weather.com/retro/';
   const zip = process.env.LOCATION || '60601';
@@ -12,6 +49,10 @@ const CHROMIUM =
   const browser = await chromium.launch({
     headless: false,
     executablePath: CHROMIUM,
+    env: {
+      ...process.env,
+      PULSE_SINK: process.env.PULSE_SINK || 'retro_sink',
+    },
     args: [
       `--window-size=${width},${height}`,
       '--no-first-run',
@@ -19,6 +60,7 @@ const CHROMIUM =
       '--kiosk',
       '--no-sandbox',
       '--disable-dev-shm-usage',
+      '--autoplay-policy=no-user-gesture-required',
     ],
   });
 
@@ -27,12 +69,14 @@ const CHROMIUM =
   });
 
   const page = await context.newPage();
-  await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+  await page.goto(targetUrl, {
+    waitUntil: 'load',
+    timeout: 180000,
+  });
 
-  const startBtn = page.getByRole('button', { name: /start retrocast/i });
-  if (await startBtn.count()) {
-    await startBtn.first().click();
-  }
+  await clickStartRetrocast(page);
+
+  await tryUnmute(page);
 
   const candidates = [
     page.getByPlaceholder(/search/i),
