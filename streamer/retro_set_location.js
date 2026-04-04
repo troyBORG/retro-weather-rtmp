@@ -104,9 +104,24 @@ async function clickStartRetrocast(page) {
   }
 }
 
-/** Try to unmute in-page audio so PulseAudio captures it. */
-async function tryUnmute(page) {
-  await page.waitForTimeout(6000);
+/** Wake video overlays (many players only show mute after hover). */
+async function nudgePlayerUi(page, width, height) {
+  try {
+    const v = page.locator('video').first();
+    if (await v.count()) {
+      await v.hover({ timeout: 3000 }).catch(() => {});
+    }
+  } catch (_) {}
+  await page.mouse.move(Math.floor(width / 2), Math.floor(height * 0.85));
+  await page.waitForTimeout(400);
+  await page.mouse.move(Math.floor(width / 2), Math.floor(height / 2));
+}
+
+/** Try to unmute in-page audio so PulseAudio captures it (retries: controls often appear late). */
+async function tryUnmute(page, width, height) {
+  const initialMs = parseInt(process.env.UNMUTE_INITIAL_DELAY_MS || '14000', 10);
+  const stepMs = parseInt(process.env.UNMUTE_RETRY_INTERVAL_MS || '7000', 10);
+  const maxPasses = parseInt(process.env.UNMUTE_MAX_PASSES || '18', 10);
 
   const attempts = [
     () => page.getByRole('button', { name: /^unmute$/i }),
@@ -115,19 +130,29 @@ async function tryUnmute(page) {
     () => page.locator('button[aria-label*="mute" i]').first(),
     () => page.locator('[title*="unmute" i]'),
     () => page.locator('[title*="mute" i]').first(),
+    () => page.locator('[class*="mute" i] button').first(),
+    () => page.locator('button').filter({ has: page.locator('svg') }).first(),
   ];
 
-  for (const getLoc of attempts) {
-    try {
-      const loc = getLoc();
-      if (await loc.count()) {
-        const el = loc.first();
-        if (await el.isVisible({ timeout: 2500 }).catch(() => false)) {
-          await el.click({ timeout: 5000 });
-          return;
+  await page.waitForTimeout(initialMs);
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    await nudgePlayerUi(page, width, height);
+
+    for (const getLoc of attempts) {
+      try {
+        const loc = getLoc();
+        if (await loc.count()) {
+          const el = loc.first();
+          if (await el.isVisible({ timeout: 3500 }).catch(() => false)) {
+            await el.click({ timeout: 5000 });
+            return;
+          }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
+
+    await page.waitForTimeout(stepMs);
   }
 }
 
@@ -142,6 +167,8 @@ async function tryUnmute(page) {
   const context = await chromium.launchPersistentContext(USER_DATA, {
     headless: false,
     executablePath: CHROMIUM,
+    // Stops the "Chrome is being controlled by automated test software" banner (top of window).
+    ignoreDefaultArgs: ['--enable-automation'],
     env: {
       ...process.env,
       PULSE_SINK: process.env.PULSE_SINK || 'retro_sink',
@@ -158,6 +185,7 @@ async function tryUnmute(page) {
       '--disable-dev-shm-usage',
       '--autoplay-policy=no-user-gesture-required',
       '--ozone-platform=x11',
+      '--disable-infobars',
     ],
   });
 
@@ -182,7 +210,7 @@ async function tryUnmute(page) {
 
   await clickStartRetrocast(page);
 
-  await tryUnmute(page);
+  await tryUnmute(page, width, height);
 
   await page.waitForTimeout(2000);
   forceFillDisplay(width, height);
