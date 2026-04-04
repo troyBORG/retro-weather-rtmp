@@ -34,13 +34,29 @@ docker compose up -d --build
 
 ## Watching the stream
 
-Example (RTSP over TCP):
+MediaMTX publishes the stream at path **`retro`**. The URL is always:
+
+```text
+rtsp://<docker-host-ip>:8554/retro
+```
+
+**On the Docker host itself** (SSH or local terminal):
 
 ```bash
 ffplay -rtsp_transport tcp rtsp://127.0.0.1:8554/retro
 ```
 
-Use your server’s IP from another machine if RTSP port **8554** is reachable.
+**From another PC, phone, or TV on your LAN**, use the host’s LAN IP (example: **`192.0.2.10`**):
+
+```bash
+ffplay -rtsp_transport tcp rtsp://192.0.2.10:8554/retro
+```
+
+**VLC:** *Media → Open Network Stream…* (or Ctrl+N) → paste `rtsp://192.0.2.10:8554/retro` → under *Show more options* you can prefer TCP if playback fails.
+
+**Firewall:** port **8554/tcp** must be allowed on the Docker host (and on any router path if you ever forward it). `docker-compose.yml` maps host `8554` → MediaMTX.
+
+If nothing connects, confirm the stack is up (`docker compose ps`) and that MediaMTX logs show publishing to path `retro` (see MediaMTX container logs).
 
 ## Compliance
 
