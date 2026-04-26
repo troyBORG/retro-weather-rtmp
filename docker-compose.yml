@@ -12,8 +12,8 @@ services:
     environment:
       - DISPLAY=:99
       # Virtual display size, FFmpeg capture size, and Chromium viewport/window (keep in sync).
-      - WIDTH=1280
-      - HEIGHT=960
+      - WIDTH=640
+      - HEIGHT=480
       - DEPTH=16
       - FPS=30
       # ZIP comes from `.env` (gitignored). Default below if no .env.
